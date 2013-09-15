@@ -29,9 +29,11 @@ module Section-2-2-9 where
  module 2-9 {A : Set} {B : A → Set} where
 
    happly : {f g : ((x : A) → B x)} → (f ≡ g) → (x : A) → f x ≡ g x
-   happly {f} {g} r = j (λ f g r → (x : A) → f x ≡ g x)
+   happly refl x = refl
+
+{- j (λ f g r → (x : A) → f x ≡ g x)
                     (λ f r → refl)
-                    r
+                    r-}
 
    postulate axiom-2-9-3 : {f g : ((x : A) → B x)} → isequiv (happly {f} {g})
 
@@ -46,7 +48,7 @@ module Section-2-2-9 where
 
    refl∏ : (f : ((x : A) → B x)) → refl {_} {f} ≡ funext (λ x → refl {_} {f x})
    refl∏ f = refl {_} {f}                   ≡⟨ (uniqueness refl)⁻¹ ⟩
-             funext (happly (refl {_} {f})) ≡⟨ ap (λ Q → funext Q) refl ⟩        
+             funext (happly (refl {_} {f})) ≡⟨ ap funext refl ⟩        
              funext (λ x → refl {_} {f x})
              ▻
 
@@ -90,29 +92,18 @@ module Section-2-2-9 where
                    transport B^ 
                              ((2-7-2.pair= {_} {_} {_ , _} {_ , _} ((p ⁻¹) , refl {_} {transport A (p ⁻¹) a}))⁻¹)
                              (f (transport A (p ⁻¹) a))
-   theorem-2-9-5 = j (λ x₁ x₂ p → (f : (a : A x₁) → B x₁ a) → (a : A x₂) →
-                        transport Π p f a ≡
-                        transport B^ 
-                             ((2-7-2.pair= {_} {_} {_ , _} {_ , _} ((p ⁻¹) , refl {_} {transport A (p ⁻¹) a}))⁻¹)
-                             (f (transport A (p ⁻¹) a)))
-                     (λ x f a → refl)
+   theorem-2-9-5 refl x a = refl
 
 
  module lemma-2-9-6 {X : Set} {A B : X → Set} where
 
    lemma-2-9-6 : {x y : X} {p : x ≡ y} → (f : A x → B x) → (g : A y → B y)
                            → (transport _ p f ≡ g) ≃ ((a : A x) → (transport _ p (f a) ≡ g (transport _ p a)))
-   lemma-2-9-6 {x} {y} {p} = j (λ x y p → (f : A x → B x) → (g : A y → B y)
-                           → (transport _ p f ≡ g) ≃ ((a : A x) → (transport _ p (f a) ≡ g (transport _ p a))))
-                   (λ x f g → (happly , axiom-2-9-3))
-                   p
+   lemma-2-9-6 {x} {.x} {refl} _ _ = (happly , axiom-2-9-3)
 
    hat : {x y : X} {p : x ≡ y} (f : A x → B x) → (g : A y → B y)
                            → (transport _ p f ≡ g) → ((a : A x) → (transport _ p (f a) ≡ g (transport _ p a)))
-   hat {x} {y} {p} = j (λ x y p → (f : A x → B x) → (g : A y → B y)
-                           → (transport _ p f ≡ g) → ((a : A x) → (transport _ p (f a) ≡ g (transport _ p a))))
-                   (λ x f g → happly)
-                   p
+   hat {x} {.x} {refl} _ _ = happly
 
    proof : {x y : X} {p : x ≡ y} (f : A x → B x) → (g : A y → B y) → (a : A x) → (q : transport _ p f ≡ g)
               → (transport (λ x → A x → B x) p f) (transport A p a) ≡ g (transport A p a)
@@ -124,12 +115,9 @@ module Section-2-2-9 where
                                    ≡⟨ ap (λ Q → transport B p (f (transport A Q a))) (p■p⁻¹≡refl p) ⟩
                  hat {x} {y} {p} f g q a
 
-   -- What did I miss? XXX
    theorem : {x y : X} {p : x ≡ y} → (f : A x → B x) → (g : A y → B y) → (a : A x) → (q : transport _ p f ≡ g)
              → happly q (transport _ p a) ≡ proof {x} {y} {p} f g a q
-   theorem {x} {y} {p} = j (λ x y p → (f : A x → B x) → (g : A y → B y) → (a : A x) → (q : transport (λ z → (x₁ : A z) → B z) p f ≡ g)
-                        → happly q (transport A p a) ≡ proof {x} {y} {p} f g a q)
-               (λ x f g a q → hat {x} {x} {refl} f g q a
+   theorem {x} {.x} {refl} f g a q = hat {x} {x} {refl} f g q a
                                          ≡⟨ p≡refl■p _ ⟩
                               (ap (λ Q → transport B refl (f (transport A Q a))) (p■p⁻¹≡refl refl)) ■ happly q a
                                          ≡⟨ p≡refl■p _ ⟩
@@ -137,8 +125,7 @@ module Section-2-2-9 where
                                          ≡⟨ p≡refl■p _ ⟩
                               ap (λ h → h (transport A refl a))
                                  (theorem-2-9-4 (refl {_} {g a}) f) ■ refl {_} {f a} ■ refl {_} {f a} ■ happly q (a)
-                              ▻)
-               p
+                              ▻
 
  module lemma-2-9-7 {X : Set} {A : X → Set} {B : (x : X) → A x → Set} where
 
@@ -150,32 +137,21 @@ module Section-2-2-9 where
    compute : {x y : X} → (p : x ≡ y) → (f : fibresection x) → (g : fibresection y) →
                           (transport F p f ≡ g) →
                           (a : A x) → transport B^ (2-7-2.pair= {X} {A} {x , a} {y , (p ∗) a} (p , refl)) (f a) ≡ g ((p ∗) a)
-   compute = j (λ x y p → (f : fibresection x) → (g : fibresection y) →
-                           (transport F p f ≡ g) →
-                           (a : A x) → transport B^ (2-7-2.pair= {X} {A} {x , a} {y , (p ∗) a} (p , refl)) (f a) ≡ g ((p ∗) a))
-               (λ x f g → happly)
+   compute refl f g = happly
 
    unique : {x y : X} → (p : x ≡ y) → (f : fibresection x) → (g : fibresection y) →
                     (((a : A x) → transport B^ (2-7-2.pair= {X} {A} {x , a} {y , (p ∗) a} (p , refl)) (f a) ≡ g ((p ∗) a))
                     → transport F p f ≡ g)
-   unique = j (λ x y p → (f : fibresection x) → (g : fibresection y) →
-                          (((a : A x) → transport B^ (2-7-2.pair= {X} {A} {x , a} {y , (p ∗) a} (p , refl)) (f a) ≡ g ((p ∗) a))
-                          → transport F p f ≡ g))
-              (λ x f g p → funext p)
+   unique refl f g = funext
 
+   -- XXX Come back here
    forward : {x y : X} → (p : x ≡ y) → (f : fibresection x) → (g : fibresection y) →
               (r : ((a : A x) → transport B^ (2-7-2.pair= {X} {A} {x , a} {y , transport A p a} (p , refl)) (f a) ≡ g ((p ∗) a))) → compute p f g (unique p f g r) ≡ r 
-   forward {x} {y} p = j (λ x y p → (f : fibresection x) → (g : fibresection y) →
-              (r : ((a : A x) → transport B^ (2-7-2.pair= {X} {A} {x , a} {y , transport A p a} (p , refl)) (f a) ≡ g ((p ∗) a))) → compute p f g (unique p f g r) ≡ r)
-                       (λ x f g → computation)
-                       p
+   forward refl f g = computation
 
    backward : {x y : X} → (p : x ≡ y) → (f : fibresection x) → (g : fibresection y) →
                                           (r : transport F p f ≡ g) → unique p f g (compute p f g r) ≡ r 
-   backward {x} {y} p = j (λ x y p → (f : fibresection x) → (g : fibresection y) →
-                                      (r : transport F p f ≡ g) → unique p f g (compute p f g r) ≡ r)
-                          (λ x f g → uniqueness)
-                          p
+   backward refl f g = uniqueness
 
    lemma-2-9-7 : (x y : X) → (p : x ≡ y) → (f : fibresection x) → (g : fibresection y) →
                     (transport F p f ≡ g) ≃

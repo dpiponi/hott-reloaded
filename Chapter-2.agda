@@ -539,15 +539,40 @@ module Chapter-2 where
  module Ex-2-11 {A B C : Set} {f : A → C} {g : B → C} where
 
    pullback : {A B C : Set} → (f : A → C) → (g : B → C) → Set
-   pullback {A} {B} {C} f g = ∑ A (λ a → ∑ B (λ b → f a ≡ g b))
+   pullback {A} {B} {C} f g = ∑ (A × B) (λ ab → f (pr₁ ab) ≡ g (pr₂ ab))
 
    P = pullback {A} {B} {C} f g
 
    is-pullback-square : (P : Set) → Set
    is-pullback-square P = (X : Set) → (X → P) ≃ pullback {X → A} {X → B} {X → C} (_○_ f) (_○_ g)
 
-   forward : (X : Set) → (X → P) → pullback {X → A} {X → B} {X → C} (_○_ f) (_○_ g)
-   forward X p = (λ x → {!!}) , ((λ x → {!!}) , {!!})
+   i₁ : P → A
+   i₁ = pr₁ ○ pr₁
+
+   i₂ : P → B
+   i₂ = pr₂  ○ pr₁
+
+   eq : (X : Set) → (X → P) → pullback {X → A} {X → B} {X → C} (_○_ f) (_○_ g)
+   eq X p = ((i₁ ○ p) , (i₂ ○ p)) , funext (λ x → pr₂ (p x))
+
+   eq⁻¹ : (X : Set) → pullback {X → A} {X → B} {X → C} (_○_ f) (_○_ g) → (X → P)
+   eq⁻¹ X ((a , b) , p) x = (a x , b x) , (happly p x)
+
+   forward : (X : Set) → (u : pullback {X → A} {X → B} {X → C} (_○_ f) (_○_ g)) → eq X (eq⁻¹ X u) ≡ u
+   forward X ((a , b) , x) = ap (λ Q → ((a , b) , Q)) (uniqueness x)
+
+   jim : (ux : P) → (( pr₁ (pr₁ (ux)) , pr₂ (pr₁ (ux)) ) , pr₂ (ux) ) ≡ ux
+   jim ((_ , _) , _) = refl
+
+   fred : (X : Set) → (u : X → P) → (x : X) → ((i₁ (u x) , i₂ (u x)) , happly (funext (λ x → pr₂ (u x))) x) ≡ u x
+   fred X u x = ((i₁ (u x) , i₂ (u x)) , happly (funext (λ x → pr₂ (u x))) x) ≡⟨ ap (λ Q → ((i₁ (u x) , i₂ (u x)) , Q x)) (computation (λ x → pr₂ (u x))) ⟩
+                (( pr₁ (pr₁ (u x)) , pr₂ (pr₁ (u x)) ) , pr₂ (u x) ) ≡⟨ jim (u x) ⟩
+                u x
+                ▻
+
+   backward : (X : Set) → (u : X → P) → eq⁻¹ X (eq X u) ≡ u
+   backward X u = funext (λ x → fred X u x)
 
    ex-2-11 : is-pullback-square P
-   ex-2-11 = {!!}
+   ex-2-11 X = (eq X) , qinv-to-isequiv (eq X) ((eq⁻¹ X) , ((forward X) , (backward X)))
+
