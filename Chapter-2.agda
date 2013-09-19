@@ -536,3 +536,101 @@ module Chapter-2 where
    ex-2-10 : ∑ A (λ x → ∑ (B x) (λ y → C (x , y))) ≃ ∑ (∑ A B) C
    ex-2-10 = f , (qinv-to-isequiv f (f⁻¹ , (forward , backward)))
 
+ module Ex-2-11 where
+
+   -- tweaked from book using associativity of ∑
+   pullback : (A B C : Set) → (f : A → C) → (g : B → C) → Set
+   pullback A B C f g = ∑ (A × B) (λ ab → f (pr₁ ab) ≡ g (pr₂ ab))
+
+   data commutative-square (P : Set) (A : Set) (B : Set) (C : Set)
+                        (h : P → A) (k : P → B) (f : A → C) (g : B → C) : Set where
+        commutes : (f ○ h ≡ g ○ k)
+                        → commutative-square P A B C h k f g
+
+
+   -- happly : {f g : ((x : A) → B x)} → (f ≡ g) → (x : A) → f x ≡ g x
+   -- (λ x₁ → f (h (x x₁))) ≡ (λ x₁ → g (k (x x₁)))
+
+   -- f (h (x u)) ≡ g (k (x u))
+   -- α : (λ x₁ → f (h x₁)) ≡ (λ x₁ → g (k x₁))
+   induced-map : {P : Set} {A : Set} {B : Set} {C : Set}
+                     {h : P → A} {k : P → B} {f : A → C} {g : B → C}
+                →  commutative-square P A B C h k f g → (X : Set)
+                →  (X → P) → pullback (X → A) (X → B) (X → C) (_○_ f) (_○_ g)
+   induced-map {P} {A} {B} {C} {h} {k} {f} {g} (commutes α) X q = ((λ z → h (q z)) , (λ z → k (q z))) , funext (λ w → happly α (q w))
+
+   data pullback-square {P : Set} {A : Set} {B : Set} {C : Set}
+                           {h : P → A} {k : P → B} {f : A → C} {g : B → C}
+                           (α : commutative-square P A B C h k f g) : Set where
+        pulls-back : ((X : Set) → isequiv (induced-map α X))
+                     → pullback-square α
+
+   module Ex-2-11 {A B C : Set} {f : A → C} {g : B → C} where
+
+     P = pullback A B C f g
+
+     i₁ : P → A
+     i₁ = pr₁ ○ pr₁
+
+     i₂ : P → B
+     i₂ = pr₂ ○ pr₁
+
+     prf : (u : P) → f (i₁ u) ≡ g (i₂ u)
+     prf (a , p) = p
+
+     ex-2-11-0 : commutative-square P A B C i₁ i₂ f g
+     ex-2-11-0 = commutes (funext prf)
+
+     eq : (X : Set) → (X → P) → pullback (X → A) (X → B) (X → C) (_○_ f) (_○_ g)
+     eq = induced-map ex-2-11-0
+
+     eq⁻¹ : (X : Set) → pullback (X → A) (X → B) (X → C) (_○_ f) (_○_ g) → (X → P)
+     eq⁻¹ X ((a , b) , p) x = (a x , b x) , happly p x
+
+{-
+   computation : {f g : ((x : A) → B x)} → (r : (x : A) → f x ≡ g x) → happly (funext r) ≡ r
+
+   uniqueness : {f g : ((x : A) → B x)} → (r : f ≡ g) → funext (happly r) ≡ r
+-}
+
+     forward : (X : Set) → (u : pullback (X → A) (X → B) (X → C) (_○_ f) (_○_ g)) → eq X (eq⁻¹ X u) ≡ u
+     forward X ((a , b) , p) = (a , b) , funext (λ u → happly (funext prf) ((λ x → (a x , b x) , happly p x) u))
+                                  ≡⟨ ap (λ Q → (a , b) , funext (λ u → Q ((λ x → (a x , b x) , happly p x) u))) (computation prf) ⟩
+                               (a , b) , funext (λ u → happly p u)
+                                  ≡⟨ ap (λ Q → (a , b) , Q) (uniqueness p) ⟩
+                               ((a , b) , p)
+                                ▻
+     tmp'' : (ux : P) → prf (ux) ≡ pr₂ (ux)
+     tmp'' (a , x) = refl
+
+     tmp' : (X : Set) → (u : X → P) → (x : X) → happly (funext (λ w → happly (funext prf) (u w))) x ≡ pr₂ (u x)
+     tmp' X u x = happly (funext (λ w → happly (funext prf) (u w))) x
+                           ≡⟨ ap (λ Q → Q x) (computation ((λ w → happly (funext prf) (u w)))) ⟩
+                  (happly (funext prf) (u x))
+                           ≡⟨ ap (λ Q → Q (u x)) (computation prf) ⟩
+                  prf (u x)
+                           ≡⟨ tmp'' (u x) ⟩
+                  pr₂ (u x)
+                  ▻
+
+     tmp''' : (ux : P) → ((i₁ (ux) , i₂ (ux)), pr₂ (ux)) ≡ ux
+     tmp''' ((_ , _) , _) = refl
+
+
+     tmp : (X : Set) → (u : X → P) → (x : X) → (((i₁ (u x) , i₂ (u x) ) , happly (funext (λ w → happly (funext prf) (u w))) x)) ≡ (u x)
+     tmp X u x = (((i₁ (u x) , i₂ (u x) ) , happly (funext (λ w → happly (funext prf) (u w))) x))
+                            ≡⟨ ap (λ Q → ((i₁ (u x) , i₂ (u x) ) , Q)) (tmp' X u x) ⟩
+                 ((i₁ (u x) , i₂ (u x) ) , pr₂ (u x))
+                            ≡⟨ tmp''' (u x) ⟩
+                 (u x)
+                 ▻
+
+     backward : (X : Set) → (u : X → P) → eq⁻¹ X (eq X u) ≡ u
+     backward X u = eq⁻¹ X (eq X u)
+                         ≡⟨ funext (tmp X u) ⟩
+                    u ▻
+
+     ex-2-11 : pullback-square ex-2-11-0
+     ex-2-11 = pulls-back (λ X → qinv-to-isequiv (eq X) ((eq⁻¹ X) , (forward X , backward X)))
+
+     
